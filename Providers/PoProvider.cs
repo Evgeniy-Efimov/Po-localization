@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace LocalizePo.Providers
@@ -11,8 +12,7 @@ namespace LocalizePo.Providers
     {
         public void ExportToFile<TModel>(IEnumerable<PoObject<TModel>> data, string filePath, Encoding encoding) where TModel : new()
         {
-            var text = string.Join(Environment.NewLine + Environment.NewLine, 
-                data.Select(d => string.Join(Environment.NewLine, d.Rows.Select(r => $"{r.PropertyName}{r.PropertyValue}"))));
+            var text = string.Join(Environment.NewLine + Environment.NewLine, data.Select(d => d.Serialize()));
 
             File.WriteAllText(filePath, text, encoding);
         }
@@ -52,8 +52,8 @@ namespace LocalizePo.Providers
 
     public class PoObject<TModel> where TModel : new()
     {
-        public List<PoRow> Rows { get; set; }
-        public TModel Model { get; set; }
+        private List<PoRow> Rows { get; set; }
+        public TModel Model { get; private set; }
 
         public PoObject(List<string> lines)
         {
@@ -71,6 +71,24 @@ namespace LocalizePo.Providers
                 }
             }
         }
+
+        public void SetModelPropertyText(PropertyInfo property, string value)
+        {
+            var row = Rows.FirstOrDefault(r => r.PropertyName == property.GetPropertyName());
+
+            if (row == null)
+            {
+                throw new Exception($"Row with property {property.GetPropertyName()} not found");
+            }
+
+            row.PropertyValue = value;
+            property.SetValue(Model, value);
+        }
+
+        public string Serialize()
+        {
+            return string.Join(Environment.NewLine, Rows.Select(r => r.Serialize()));
+        }
     }
 
     public class PoRow
@@ -82,6 +100,11 @@ namespace LocalizePo.Providers
         {
             PropertyName = propertyNames.FirstOrDefault(pn => line.StartsWith(pn)) ?? string.Empty;
             PropertyValue = string.IsNullOrWhiteSpace(PropertyName) ? line : line.Substring(PropertyName.Length);
+        }
+
+        public string Serialize()
+        {
+            return $"{PropertyName}{PropertyValue}";
         }
     }
 }

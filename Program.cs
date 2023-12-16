@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LocalizePo.Entities;
-using LocalizePo.Helpers;
 using LocalizePo.Providers;
 
 namespace LocalizePo
@@ -19,7 +18,7 @@ namespace LocalizePo
                 Encoding encoding = new UTF8Encoding(true);
 
                 //input variables
-                var workDirectory = @"C:\temp";
+                var workDirectory = "Data";
                 var localizationFileName = "Game.po";
                 var workFileName = "Game.xlsx";
                 var localizationFilePath = string.Empty;
@@ -156,15 +155,7 @@ namespace LocalizePo
 
                                 if (localization.Model.LocalizedText != data.Model.LocalizedText)
                                 {
-                                    var localizedTextRow = localization.Rows.FirstOrDefault(r => r.PropertyName == typeof(LocalizationData).GetProperty(nameof(data.Model.LocalizedText)).GetPropertyName());
-
-                                    if (localizedTextRow == null)
-                                    {
-                                        throw new Exception($"Can't update localization with key {data.Model.Key} and source {data.Model.SourceLocation}");
-                                    }
-
-                                    localizedTextRow.PropertyValue = data.Model.LocalizedText;
-                                    localization.Model.LocalizedText = data.Model.LocalizedText;
+                                    localization.SetModelPropertyText(typeof(LocalizationData).GetProperty(nameof(data.Model.LocalizedText)), data.Model.LocalizedText);
 
                                     updateResults.Add(new UpdateResult()
                                     {
